@@ -66,7 +66,7 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements
             "com.example.android.sunshine.app.ACTION_DATA_UPDATED";
     // Interval at which to sync with the weather, in seconds.
     // 60 seconds (1 minute) * 180 = 3 hours
-    public static final int SYNC_INTERVAL = 60 * 180;
+    public static final int SYNC_INTERVAL = 60;// * 180;
     public static final int SYNC_FLEXTIME = SYNC_INTERVAL / 3;
     private static final long DAY_IN_MILLIS = 1000 * 60 * 60 * 24;
     private static final int WEATHER_NOTIFICATION_ID = 3004;
@@ -294,6 +294,9 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements
             // now we work exclusively in UTC
             dayTime = new Time();
 
+            double wearHigh = 0;
+            double wearLow = 0;
+
             for (int i = 0; i < weatherArray.length(); i++) {
                 // These are the values that will be collected.
                 long dateTime;
@@ -301,7 +304,6 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements
                 int humidity;
                 double windSpeed;
                 double windDirection;
-
                 double high;
                 double low;
 
@@ -331,6 +333,11 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements
                 JSONObject temperatureObject = dayForecast.getJSONObject(OWM_TEMPERATURE);
                 high = temperatureObject.getDouble(OWM_MAX);
                 low = temperatureObject.getDouble(OWM_MIN);
+
+                if(i==0){
+                    wearHigh=high;
+                    wearLow=low;
+                }
 
                 ContentValues weatherValues = new ContentValues();
 
@@ -363,7 +370,7 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements
                 updateWidgets();
                 updateMuzei();
                 notifyWeather();
-                notifyWearable();
+                notifyWearable(wearHigh,wearLow);
             }
             Log.d(LOG_TAG, "Sync Complete. " + cVVector.size() + " Inserted");
             setLocationStatus(getContext(), LOCATION_STATUS_OK);
@@ -375,11 +382,11 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements
         }
     }
 
-    private void notifyWearable() {
+    private void notifyWearable(double high, double low) {
         PutDataMapRequest putDataMapReq = PutDataMapRequest.create("/wear_face");
 
-        putDataMapReq.getDataMap().putString("HIGH_TEMP", "som");
-        putDataMapReq.getDataMap().putString("LOW_TEMP", "o");
+        putDataMapReq.getDataMap().putString("HIGH_TEMP", ""+high);
+        putDataMapReq.getDataMap().putString("LOW_TEMP", ""+low);
 
         PutDataRequest putDataReq = putDataMapReq.asPutDataRequest();
         Wearable.DataApi.putDataItem(googleApiClient, putDataReq);

@@ -33,6 +33,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
+import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.WindowInsets;
 import android.widget.Toast;
@@ -115,6 +116,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
         };
         float mXOffset;
         float mYOffset;
+        String maxTemp="0",minTemp="0";
 
         /**
          * Whether the display supports fewer bits for each color in ambient mode. When true, we
@@ -296,7 +298,12 @@ public class MyWatchFace extends CanvasWatchFaceService {
                     : String.format("%d:%02d:%02d", mCalendar.get(Calendar.HOUR),
                     mCalendar.get(Calendar.MINUTE), mCalendar.get(Calendar.SECOND));
             canvas.drawText(text, mXOffset, mYOffset, mTextPaint);
-            canvas.drawText("Hello",mXOffset,(mYOffset+mYOffset)/4,mTextPaint);
+           // canvas.drawText("Hello",mXOffset,(mYOffset+mYOffset)/4,mTextPaint);
+
+            int dist=0;
+            canvas.drawText(maxTemp,mXOffset,mYOffset+50,mTextPaint);
+            canvas.drawText(minTemp,mXOffset+100,mYOffset+50,mTextPaint);
+
         }
 
         /**
@@ -348,22 +355,21 @@ public class MyWatchFace extends CanvasWatchFaceService {
                 }
 
                 dataEvents.release();
+                invalidate();
                 //invalidateIfNecessary();
             }
         };
 
         private void processConfigurationFor(DataItem item) {
-            if ("/simple_watch_face_config".equals(item.getUri().getPath())) {
+            if ("/wear_face".equals(item.getUri().getPath())) {
                 DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
-                if (dataMap.containsKey("KEY_BACKGROUND_COLOUR")) {
-                    String backgroundColour = dataMap.getString("KEY_BACKGROUND_COLOUR");
+                if (dataMap.containsKey("HIGH_TEMP"))
+                    maxTemp = dataMap.getString("HIGH_TEMP");
+                if (dataMap.containsKey("LOW_TEMP"))
+                    minTemp = dataMap.getString("LOW_TEMP");
 
-                }
 
-                if (dataMap.containsKey("KEY_DATE_TIME_COLOUR")) {
-                    String timeColour = dataMap.getString("KEY_DATE_TIME_COLOUR");
-
-                }
+                Log.d("HEYHEYHEY",maxTemp+";;;;"+minTemp);
             }
         }
 
@@ -375,6 +381,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
                 }
 
                 dataItems.release();
+                invalidate();
                 //invalidateIfNecessary();
             }
         };
