@@ -104,7 +104,7 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements
                 .addOnConnectionFailedListener(this)
                 .addApi(Wearable.API)
                 .build();
-        googleApiClient.connect();
+
     }
 
     @Override
@@ -383,13 +383,18 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements
     }
 
     private void notifyWearable(double high, double low) {
-        PutDataMapRequest putDataMapReq = PutDataMapRequest.create("/wear_face");
+        googleApiClient.connect();
+        PutDataMapRequest putDataMapReq = PutDataMapRequest.create("/wear_face").setUrgent();
 
         putDataMapReq.getDataMap().putString("HIGH_TEMP", ""+high);
         putDataMapReq.getDataMap().putString("LOW_TEMP", ""+low);
 
+        putDataMapReq.getDataMap().putLong("Time",System.currentTimeMillis());
         PutDataRequest putDataReq = putDataMapReq.asPutDataRequest();
         Wearable.DataApi.putDataItem(googleApiClient, putDataReq);
+
+        Log.d("DATASENT","yu");
+        googleApiClient.disconnect();
     }
 
     private void updateWidgets() {
