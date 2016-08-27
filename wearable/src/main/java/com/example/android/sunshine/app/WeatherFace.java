@@ -42,12 +42,10 @@ import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.wearable.DataApi;
 import com.google.android.gms.wearable.DataEvent;
 import com.google.android.gms.wearable.DataEventBuffer;
 import com.google.android.gms.wearable.DataItem;
-import com.google.android.gms.wearable.DataItemBuffer;
 import com.google.android.gms.wearable.DataMap;
 import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.Wearable;
@@ -290,7 +288,6 @@ public class WeatherFace extends CanvasWatchFaceService {
 
         @Override
         public void onDraw(Canvas canvas, Rect bounds) {
-            //Log.d("Dekhbhai", "789" + maxTemp + ".." + minTemp);
             // Draw the background.
             if (isInAmbientMode()) {
                 canvas.drawColor(Color.BLACK);
@@ -298,6 +295,7 @@ public class WeatherFace extends CanvasWatchFaceService {
                 canvas.drawRect(0, 0, bounds.width(), bounds.height(), mBackgroundPaint);
             }
 
+            //Log.d("DekhBhai",googleApiClient.isConnected()+"");
             // Draw H:MM in ambient mode or H:MM:SS in interactive mode.
             long now = System.currentTimeMillis();
             mCalendar.setTimeInMillis(now);
@@ -315,24 +313,26 @@ public class WeatherFace extends CanvasWatchFaceService {
             canvas.drawText(maxTemp+"\u00b0"+"c", afterTimeXOffset+30,tempYOffset, mSmallTmpText);
             canvas.drawText(minTemp+"\u00b0"+"c", afterTimeXOffset+30, mYOffset+20, mSmallTmpText);
 
-            float baseTextYOffset = mYOffset + 30;
-            Date date = mCalendar.getTime();
+            if(!isInAmbientMode()) {
+                float baseTextYOffset = mYOffset + 30;
+                Date date = mCalendar.getTime();
 
-            canvas.drawText(mCalendar.get(Calendar.DAY_OF_MONTH)+" "+
-                    monthInThreeChar(mCalendar.get(Calendar.MONTH))+" "+
-                    mCalendar.get(Calendar.YEAR)+", "+
-                    dayInThreeChar(mCalendar.get(Calendar.DAY_OF_WEEK))
+                canvas.drawText(mCalendar.get(Calendar.DAY_OF_MONTH) + " " +
+                                monthInThreeChar(mCalendar.get(Calendar.MONTH)) + " " +
+                                mCalendar.get(Calendar.YEAR) + ", " +
+                                dayInThreeChar(mCalendar.get(Calendar.DAY_OF_WEEK))
 
-                    ,mXOffset,baseTextYOffset,mSmallTmpText);
+                        , mXOffset, baseTextYOffset, mSmallTmpText);
 
-            canvas.drawLine(afterTimeXOffset+15,upperYOffset,afterTimeXOffset+15,baseTextYOffset+15,mTextPaint);
+                canvas.drawLine(afterTimeXOffset + 15, upperYOffset, afterTimeXOffset + 15, baseTextYOffset + 15, mTextPaint);
 
-            float iconXOffset  = mXOffset + widthOfTime/2;
-            float iconYOffset = baseTextYOffset + 20;
+                float iconXOffset = mXOffset + widthOfTime / 2;
+                float iconYOffset = baseTextYOffset + 20;
 
-            int icon = getIconResourceForWeatherCondition(weatherId);
-            Bitmap weatherIcon = BitmapFactory.decodeResource(getResources(),icon);
-            canvas.drawBitmap(weatherIcon,iconXOffset,iconYOffset,mTextPaint);
+                int icon = getIconResourceForWeatherCondition(weatherId);
+                Bitmap weatherIcon = BitmapFactory.decodeResource(getResources(), icon);
+                canvas.drawBitmap(weatherIcon, iconXOffset, iconYOffset, mTextPaint);
+            }
         }
 
         /**
@@ -461,6 +461,7 @@ public class WeatherFace extends CanvasWatchFaceService {
             //Wearable.DataApi.getDataItems(googleApiClient).setResultCallback(onConnectedResultCallback);
         }
 
+
         @Override
         public void onDataChanged(DataEventBuffer dataEvents) {
             Log.d("Dekhbhai", "1");
@@ -474,6 +475,7 @@ public class WeatherFace extends CanvasWatchFaceService {
             dataEvents.release();
             invalidate();
         }
+
 
         /* This method is Not working. Concluded after reading many pages on net
         private final DataApi.DataListener onDataChangedListener = new DataApi.DataListener() {
@@ -494,6 +496,7 @@ public class WeatherFace extends CanvasWatchFaceService {
         };
         */
 
+
         private void processConfigurationFor(DataItem item) {
             Log.d("Dekhbhai", "3");
             if ("/wear_face".equals(item.getUri().getPath())) {
@@ -509,10 +512,11 @@ public class WeatherFace extends CanvasWatchFaceService {
             }
         }
 
+        /*
         private final ResultCallback<DataItemBuffer> onConnectedResultCallback = new ResultCallback<DataItemBuffer>() {
             @Override
             public void onResult(DataItemBuffer dataItems) {
-                Log.d("Dekhbhai", "2");
+                Log.d("Dekhbhai", "2......"+googleApiClient.isConnected()+dataItems.toString());
                 for (DataItem item : dataItems) {
                     processConfigurationFor(item);
                 }
@@ -522,6 +526,7 @@ public class WeatherFace extends CanvasWatchFaceService {
                 //invalidateIfNecessary();
             }
         };
+        */
 
 
         @Override

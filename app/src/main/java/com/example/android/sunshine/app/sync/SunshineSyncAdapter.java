@@ -40,6 +40,8 @@ import com.example.android.sunshine.app.data.WeatherContract;
 import com.example.android.sunshine.app.muzei.WeatherMuzeiSource;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.wearable.DataApi;
 import com.google.android.gms.wearable.PutDataMapRequest;
 import com.google.android.gms.wearable.PutDataRequest;
 import com.google.android.gms.wearable.Wearable;
@@ -56,6 +58,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Date;
 import java.util.Vector;
 import java.util.concurrent.ExecutionException;
 
@@ -394,8 +397,15 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements
         putDataMapReq.getDataMap().putInt("WEATHER_ID", wearWeatherId);
 
         putDataMapReq.getDataMap().putLong("Time",System.currentTimeMillis());
-        PutDataRequest putDataReq = putDataMapReq.asPutDataRequest();
-        Wearable.DataApi.putDataItem(googleApiClient, putDataReq);
+        putDataMapReq.getDataMap().putString("TT", String.valueOf(new Date().getTime()));
+        PutDataRequest putDataReq = putDataMapReq.asPutDataRequest().setUrgent();
+        Wearable.DataApi.putDataItem(googleApiClient, putDataReq)
+                .setResultCallback(new ResultCallback<DataApi.DataItemResult>() {
+                    @Override
+                    public void onResult(@NonNull DataApi.DataItemResult dataItemResult) {
+                        Log.d("DATASENT","YES"+dataItemResult.toString());
+                    }
+                });
 
         Log.d("DATASENT","yu");
         googleApiClient.disconnect();
