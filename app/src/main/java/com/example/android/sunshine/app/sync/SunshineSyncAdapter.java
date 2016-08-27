@@ -296,6 +296,8 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements
 
             double wearHigh = 0;
             double wearLow = 0;
+            int wearWeatherId = 0;
+
 
             for (int i = 0; i < weatherArray.length(); i++) {
                 // These are the values that will be collected.
@@ -337,6 +339,7 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements
                 if(i==0){
                     wearHigh=high;
                     wearLow=low;
+                    wearWeatherId=weatherId;
                 }
 
                 ContentValues weatherValues = new ContentValues();
@@ -370,7 +373,7 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements
                 updateWidgets();
                 updateMuzei();
                 notifyWeather();
-                notifyWearable(wearHigh,wearLow);
+                notifyWearable(wearHigh,wearLow,wearWeatherId);
             }
             Log.d(LOG_TAG, "Sync Complete. " + cVVector.size() + " Inserted");
             setLocationStatus(getContext(), LOCATION_STATUS_OK);
@@ -382,12 +385,13 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements
         }
     }
 
-    private void notifyWearable(double high, double low) {
+    private void notifyWearable(double high, double low, int wearWeatherId) {
         googleApiClient.connect();
         PutDataMapRequest putDataMapReq = PutDataMapRequest.create("/wear_face").setUrgent();
 
-        putDataMapReq.getDataMap().putString("HIGH_TEMP", ""+high);
-        putDataMapReq.getDataMap().putString("LOW_TEMP", ""+low);
+        putDataMapReq.getDataMap().putString("HIGH_TEMP", ""+Math.round(high));
+        putDataMapReq.getDataMap().putString("LOW_TEMP", ""+Math.round(low));
+        putDataMapReq.getDataMap().putInt("WEATHER_ID", wearWeatherId);
 
         putDataMapReq.getDataMap().putLong("Time",System.currentTimeMillis());
         PutDataRequest putDataReq = putDataMapReq.asPutDataRequest();

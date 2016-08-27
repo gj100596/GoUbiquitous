@@ -21,6 +21,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -52,6 +54,7 @@ import com.google.android.gms.wearable.Wearable;
 
 import java.lang.ref.WeakReference;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
@@ -99,12 +102,12 @@ public class WeatherFace extends CanvasWatchFaceService {
         }
     }
 
-    private class Engine extends CanvasWatchFaceService.Engine implements
-            GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener{
+    private class Engine extends CanvasWatchFaceService.Engine implements DataApi.DataListener,
+            GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
         final Handler mUpdateTimeHandler = new EngineHandler(this);
         boolean mRegisteredTimeZoneReceiver = false;
         Paint mBackgroundPaint;
-        Paint mTextPaint;
+        Paint mTextPaint,mSmallTmpText;
         boolean mAmbient;
         Calendar mCalendar;
         final BroadcastReceiver mTimeZoneReceiver = new BroadcastReceiver() {
@@ -116,7 +119,8 @@ public class WeatherFace extends CanvasWatchFaceService {
         };
         float mXOffset;
         float mYOffset;
-        String maxTemp="0",minTemp="0";
+        String maxTemp = "28", minTemp = "19";
+        int weatherId = 610;
 
         /**
          * Whether the display supports fewer bits for each color in ambient mode. When true, we
@@ -143,6 +147,9 @@ public class WeatherFace extends CanvasWatchFaceService {
 
             mTextPaint = new Paint();
             mTextPaint = createTextPaint(resources.getColor(R.color.digital_text));
+
+            mSmallTmpText = new Paint();
+            mSmallTmpText = createTextPaint(resources.getColor(R.color.digital_text));
 
             mCalendar = Calendar.getInstance();
 
@@ -226,6 +233,7 @@ public class WeatherFace extends CanvasWatchFaceService {
                     ? R.dimen.digital_text_size_round : R.dimen.digital_text_size);
 
             mTextPaint.setTextSize(textSize);
+            mSmallTmpText.setTextSize(textSize/3);
         }
 
         @Override
@@ -247,6 +255,7 @@ public class WeatherFace extends CanvasWatchFaceService {
                 mAmbient = inAmbientMode;
                 if (mLowBitAmbient) {
                     mTextPaint.setAntiAlias(!inAmbientMode);
+                    mSmallTmpText.setAntiAlias(!inAmbientMode);
                 }
                 invalidate();
             }
@@ -281,7 +290,7 @@ public class WeatherFace extends CanvasWatchFaceService {
 
         @Override
         public void onDraw(Canvas canvas, Rect bounds) {
-             Log.d("Dekhbhai","789"+maxTemp+".."+minTemp);
+            //Log.d("Dekhbhai", "789" + maxTemp + ".." + minTemp);
             // Draw the background.
             if (isInAmbientMode()) {
                 canvas.drawColor(Color.BLACK);
@@ -293,18 +302,123 @@ public class WeatherFace extends CanvasWatchFaceService {
             long now = System.currentTimeMillis();
             mCalendar.setTimeInMillis(now);
 
-            String text = mAmbient
-                    ? String.format("%d:%02d", mCalendar.get(Calendar.HOUR),
-                    mCalendar.get(Calendar.MINUTE))
-                    : String.format("%d:%02d:%02d", mCalendar.get(Calendar.HOUR),
-                    mCalendar.get(Calendar.MINUTE), mCalendar.get(Calendar.SECOND));
+            String text =  String.format("%02d:%02d", mCalendar.get(Calendar.HOUR),
+                        mCalendar.get(Calendar.MINUTE));
+
             canvas.drawText(text, mXOffset, mYOffset, mTextPaint);
-            // canvas.drawText("Hello",mXOffset,(mYOffset+mYOffset)/4,mTextPaint);
 
-            int dist=0;
-            canvas.drawText(maxTemp,mXOffset,mYOffset+50,mTextPaint);
-            canvas.drawText(minTemp,mXOffset+100,mYOffset+50,mTextPaint);
+            float widthOfTime = mTextPaint.measureText(text);
+            float afterTimeXOffset = mXOffset + widthOfTime;
+            float upperYOffset = mYOffset - mTextPaint.getTextSize() + 10;
 
+            float tempYOffset = mYOffset - mSmallTmpText.getTextSize()+10;
+            canvas.drawText(maxTemp+"\u00b0"+"c", afterTimeXOffset+30,tempYOffset, mSmallTmpText);
+            canvas.drawText(minTemp+"\u00b0"+"c", afterTimeXOffset+30, mYOffset+20, mSmallTmpText);
+
+            float baseTextYOffset = mYOffset + 30;
+            Date date = mCalendar.getTime();
+
+            canvas.drawText(mCalendar.get(Calendar.DAY_OF_MONTH)+" "+
+                    monthInThreeChar(mCalendar.get(Calendar.MONTH))+" "+
+                    mCalendar.get(Calendar.YEAR)+", "+
+                    dayInThreeChar(mCalendar.get(Calendar.DAY_OF_WEEK))
+
+                    ,mXOffset,baseTextYOffset,mSmallTmpText);
+
+            canvas.drawLine(afterTimeXOffset+15,upperYOffset,afterTimeXOffset+15,baseTextYOffset+15,mTextPaint);
+
+            float iconXOffset  = mXOffset + widthOfTime/2;
+            float iconYOffset = baseTextYOffset + 20;
+
+            int icon = getIconResourceForWeatherCondition(weatherId);
+            Bitmap weatherIcon = BitmapFactory.decodeResource(getResources(),icon);
+            canvas.drawBitmap(weatherIcon,iconXOffset,iconYOffset,mTextPaint);
+        }
+
+        /**
+         *
+         * To find weather icon. Copied from app code.
+         * @param weatherId
+         * @return resource id
+         */
+        public int getIconResourceForWeatherCondition(int weatherId) {
+            // Based on weather code data found at:
+            // http://bugs.openweathermap.org/projects/api/wiki/Weather_Condition_Codes
+            if (weatherId >= 200 && weatherId <= 232) {
+                return R.drawable.ic_storm;
+            } else if (weatherId >= 300 && weatherId <= 321) {
+                return R.drawable.ic_light_rain;
+            } else if (weatherId >= 500 && weatherId <= 504) {
+                return R.drawable.ic_rain;
+            } else if (weatherId == 511) {
+                return R.drawable.ic_snow;
+            } else if (weatherId >= 520 && weatherId <= 531) {
+                return R.drawable.ic_rain;
+            } else if (weatherId >= 600 && weatherId <= 622) {
+                return R.drawable.ic_snow;
+            } else if (weatherId >= 701 && weatherId <= 761) {
+                return R.drawable.ic_fog;
+            } else if (weatherId == 761 || weatherId == 781) {
+                return R.drawable.ic_storm;
+            } else if (weatherId == 800) {
+                return R.drawable.ic_clear;
+            } else if (weatherId == 801) {
+                return R.drawable.ic_light_clouds;
+            } else if (weatherId >= 802 && weatherId <= 804) {
+                return R.drawable.ic_cloudy;
+            }
+            return -1;
+        }
+
+
+        private String monthInThreeChar(int month) {
+            switch (month){
+                case Calendar.JANUARY:
+                    return "JAN";
+                case Calendar.FEBRUARY:
+                    return "FEB";
+                case Calendar.MARCH:
+                    return "MAR";
+                case Calendar.APRIL:
+                    return "APR";
+                case Calendar.MAY:
+                    return "MAY";
+                case Calendar.JUNE:
+                    return "JUN";
+                case Calendar.JULY:
+                    return "JUL";
+                case Calendar.AUGUST:
+                    return  "AUG";
+                case Calendar.SEPTEMBER:
+                    return "SEP";
+                case Calendar.OCTOBER:
+                    return "OCT";
+                case Calendar.NOVEMBER:
+                    return "NOV";
+                case Calendar.DECEMBER:
+                    return "DEC";
+            }
+            return "ERR";
+        }
+
+        private String dayInThreeChar(int day) {
+            switch (day){
+                case Calendar.SUNDAY:
+                    return "SUN";
+                case Calendar.MONDAY:
+                    return "MON";
+                case Calendar.TUESDAY:
+                    return "TUE";
+                case Calendar.WEDNESDAY:
+                    return "WED";
+                case Calendar.THURSDAY:
+                    return "THU";
+                case Calendar.FRIDAY:
+                    return "FRI";
+                case Calendar.SATURDAY:
+                    return "SAT";
+            }
+            return "ERR";
         }
 
         /**
@@ -341,10 +455,27 @@ public class WeatherFace extends CanvasWatchFaceService {
 
         @Override
         public void onConnected(@Nullable Bundle bundle) {
-            Wearable.DataApi.addListener(googleApiClient, onDataChangedListener);
-            Wearable.DataApi.getDataItems(googleApiClient).setResultCallback(onConnectedResultCallback);
+            Log.d("Dekhbhai","Started");
+            Wearable.DataApi.addListener(googleApiClient, Engine.this);
+            //Wearable.DataApi.addListener(googleApiClient, onDataChangedListener);
+            //Wearable.DataApi.getDataItems(googleApiClient).setResultCallback(onConnectedResultCallback);
         }
 
+        @Override
+        public void onDataChanged(DataEventBuffer dataEvents) {
+            Log.d("Dekhbhai", "1");
+            for (DataEvent event : dataEvents) {
+                if (event.getType() == DataEvent.TYPE_CHANGED) {
+                    DataItem item = event.getDataItem();
+                    processConfigurationFor(item);
+                }
+            }
+
+            dataEvents.release();
+            invalidate();
+        }
+
+        /* This method is Not working. Concluded after reading many pages on net
         private final DataApi.DataListener onDataChangedListener = new DataApi.DataListener() {
             @Override
             public void onDataChanged(DataEventBuffer dataEvents) {
@@ -361,25 +492,27 @@ public class WeatherFace extends CanvasWatchFaceService {
                 //invalidateIfNecessary();
             }
         };
+        */
 
         private void processConfigurationFor(DataItem item) {
-            Log.d("Dekhbhai","3");
+            Log.d("Dekhbhai", "3");
             if ("/wear_face".equals(item.getUri().getPath())) {
                 DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
                 if (dataMap.containsKey("HIGH_TEMP"))
                     maxTemp = dataMap.getString("HIGH_TEMP");
                 if (dataMap.containsKey("LOW_TEMP"))
                     minTemp = dataMap.getString("LOW_TEMP");
+                if (dataMap.containsKey("WEATHER_ID"))
+                    weatherId = dataMap.getInt("WEATHER_ID");
 
-
-                Log.d("HEYHEYHEY",maxTemp+";;;;"+minTemp);
+                Log.d("HEYHEYHEY", maxTemp + ";;;;" + minTemp);
             }
         }
 
         private final ResultCallback<DataItemBuffer> onConnectedResultCallback = new ResultCallback<DataItemBuffer>() {
             @Override
             public void onResult(DataItemBuffer dataItems) {
-                Log.d("Dekhbhai","2");
+                Log.d("Dekhbhai", "2");
                 for (DataItem item : dataItems) {
                     processConfigurationFor(item);
                 }
@@ -393,12 +526,12 @@ public class WeatherFace extends CanvasWatchFaceService {
 
         @Override
         public void onConnectionSuspended(int i) {
-
+            Log.d("Fail Hogaya Be",""+i);
         }
 
         @Override
         public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-
+            Log.d("Fail Hogaya Be","fail"+connectionResult.toString()+connectionResult.getErrorMessage());
         }
     }
 }
