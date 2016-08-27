@@ -100,6 +100,10 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements
     public static final int LOCATION_STATUS_UNKNOWN = 3;
     public static final int LOCATION_STATUS_INVALID = 4;
 
+    double wearHigh = 0;
+    double wearLow = 0;
+    int wearWeatherId = 0;
+
     public SunshineSyncAdapter(Context context, boolean autoInitialize) {
         super(context, autoInitialize);
         googleApiClient = new GoogleApiClient.Builder(context)
@@ -297,9 +301,6 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements
             // now we work exclusively in UTC
             dayTime = new Time();
 
-            double wearHigh = 0;
-            double wearLow = 0;
-            int wearWeatherId = 0;
 
 
             for (int i = 0; i < weatherArray.length(); i++) {
@@ -376,7 +377,8 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements
                 updateWidgets();
                 updateMuzei();
                 notifyWeather();
-                notifyWearable(wearHigh,wearLow,wearWeatherId);
+                googleApiClient.connect();
+                //notifyWearable(wearHigh,wearLow,wearWeatherId);
             }
             Log.d(LOG_TAG, "Sync Complete. " + cVVector.size() + " Inserted");
             setLocationStatus(getContext(), LOCATION_STATUS_OK);
@@ -388,12 +390,12 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements
         }
     }
 
-    private void notifyWearable(double high, double low, int wearWeatherId) {
-        googleApiClient.connect();
+    private void notifyWearable(){//double high, double low, int wearWeatherId) {
+
         PutDataMapRequest putDataMapReq = PutDataMapRequest.create("/wear_face").setUrgent();
 
-        putDataMapReq.getDataMap().putString("HIGH_TEMP", ""+Math.round(high));
-        putDataMapReq.getDataMap().putString("LOW_TEMP", ""+Math.round(low));
+        putDataMapReq.getDataMap().putString("HIGH_TEMP", ""+Math.round(wearHigh));
+        putDataMapReq.getDataMap().putString("LOW_TEMP", ""+Math.round(wearLow));
         putDataMapReq.getDataMap().putInt("WEATHER_ID", wearWeatherId);
 
         putDataMapReq.getDataMap().putLong("Time",System.currentTimeMillis());
@@ -694,7 +696,8 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
-
+        Log.d("Testing",bundle.toString());
+        notifyWearable();
     }
 
     @Override
@@ -704,6 +707,6 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements
 
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-
+        Log.d("Connection","Failed"+connectionResult.toString());
     }
 }
