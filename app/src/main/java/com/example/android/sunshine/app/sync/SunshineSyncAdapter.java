@@ -409,7 +409,7 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements
                     }
                 });
 
-        Log.d("DATASENT","yu");
+        Log.d("DATASENT","yup");
         googleApiClient.disconnect();
     }
 
