@@ -696,7 +696,7 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
-        Log.d("Testing",bundle.toString());
+        Log.d("Testing","done");//+bundle.toString());
         notifyWearable();
     }
 

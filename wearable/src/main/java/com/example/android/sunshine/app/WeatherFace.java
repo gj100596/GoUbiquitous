@@ -295,8 +295,6 @@ public class WeatherFace extends CanvasWatchFaceService {
                 canvas.drawRect(0, 0, bounds.width(), bounds.height(), mBackgroundPaint);
             }
 
-            //Log.d("DekhBhai",googleApiClient.isConnected()+"");
-            // Draw H:MM in ambient mode or H:MM:SS in interactive mode.
             long now = System.currentTimeMillis();
             mCalendar.setTimeInMillis(now);
 
@@ -319,7 +317,7 @@ public class WeatherFace extends CanvasWatchFaceService {
 
                 canvas.drawText(mCalendar.get(Calendar.DAY_OF_MONTH) + " " +
                                 monthInThreeChar(mCalendar.get(Calendar.MONTH)) + " " +
-                                mCalendar.get(Calendar.YEAR) + ", " +
+                                new String(mCalendar.get(Calendar.YEAR)+"").substring(2,4) + ", " +
                                 dayInThreeChar(mCalendar.get(Calendar.DAY_OF_WEEK))
 
                         , mXOffset, baseTextYOffset, mSmallTmpText);
@@ -455,7 +453,6 @@ public class WeatherFace extends CanvasWatchFaceService {
 
         @Override
         public void onConnected(@Nullable Bundle bundle) {
-            Log.d("Dekhbhai","Started");
             Wearable.DataApi.addListener(googleApiClient, Engine.this);
             //Wearable.DataApi.addListener(googleApiClient, onDataChangedListener);
             //Wearable.DataApi.getDataItems(googleApiClient).setResultCallback(onConnectedResultCallback);
@@ -464,7 +461,7 @@ public class WeatherFace extends CanvasWatchFaceService {
 
         @Override
         public void onDataChanged(DataEventBuffer dataEvents) {
-            Log.d("Dekhbhai", "1");
+            Log.d("Data Change", "Called");
             for (DataEvent event : dataEvents) {
                 if (event.getType() == DataEvent.TYPE_CHANGED) {
                     DataItem item = event.getDataItem();
@@ -531,12 +528,12 @@ public class WeatherFace extends CanvasWatchFaceService {
 
         @Override
         public void onConnectionSuspended(int i) {
-            Log.d("Fail Hogaya Be",""+i);
+            Log.d("Connection","Fail");
         }
 
         @Override
         public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-            Log.d("Fail Hogaya Be","fail"+connectionResult.toString()+connectionResult.getErrorMessage());
+            Log.d("Connection","Fail"+connectionResult.getErrorMessage());
         }
     }
 }
